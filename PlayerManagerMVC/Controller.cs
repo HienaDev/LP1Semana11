@@ -1,152 +1,129 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace PlayerManagerMVC
 {
     public class Controller
     {
+        private List<Player> list;
+        private IView view;
+        private IComparer<Player> compareByName;
+        private IComparer<Player> compareByNameReverse;
+        private PlayerOrder playerOrder;
 
-        private List<Player> PlayerList { get; private set; }
-
-        private string Option { get; private set; }
-
-        public Controller(List<Player> playerList)
+        public Controller(List<Player> list)
         {
-            PlayerList = playerList;
-            PlayerList.Sort();
+            this.list = list;
+
+            compareByName = new CompareByName(true);
+            compareByNameReverse = new CompareByName(false);
+            playerOrder = PlayerOrder.ByScore;
         }
 
-        public void Start()
-        {   
-
+        public void Run(IView view)
+        {
+            int input;
+            this.view = view;
             do
             {
+                // 1 -> Insert player
+                // 2 -> List all players
+                // 3 -> List players w/ score > x
+                // 4 -> Change player sorting criteria
+                // 0 -> Exit
+                input = view.MainMenu(playerOrder);
 
-                ConsoleView.ShowMenu();
-                Option = Console.ReadLine();
-
-                switch (option)
+                switch (input)
                 {
-                    case "1":
-                        // Insert player
+                    case 0:
+                        break;
+                    case 1:
                         InsertPlayer();
                         break;
-                    case "2":
-                        ListPlayers(playerList);
+                    case 2:
+                        SortPlayers();
+                        view.ShowPlayers(list);
                         break;
-                    case "3":
-                        ListPlayersWithScoreGreaterThan();
+                    case 3:
+                        SortPlayers();
+                        ShowPlayersWithScore();
                         break;
-                    case "4":
-                        Console.WriteLine("Bye!");
-                        break;
-                    case "5":
-                        comp = new CompareByName();
-                        playerList.Sort(comp);
-                        break;
-                    case "6":
-                        comp = new CompareByName(true);
-                        playerList.Sort(comp);
-                        break;
-                    case "7":
-                        comp = new CompareByName(false);
-                        playerList.Sort(comp);
+                    case 4:
+                        ChangePlayerOrder();
                         break;
                     default:
-                        Console.Error.WriteLine("\n>>> Unknown option! <<<\n");
+                        view.InvalidOption();
                         break;
                 }
-            }while (Option != "4");
+            }
+            while (input != 0);
         }
 
-        /// <summary>
-        /// Inserts a new player in the player list.
-        /// </summary>
+        private void ChangePlayerOrder()
+        {
+            do
+            {
+                playerOrder = view.AskPlayerOrder();
+
+                if (playerOrder < PlayerOrder.ByScore
+                    || playerOrder > PlayerOrder.ByNameReverse)
+                {
+                    view.InvalidOption();
+                }
+                else
+                {
+                    break;
+                }
+            }
+            while (true);
+        }
+
+        private void SortPlayers()
+        {
+            switch (playerOrder)
+            {
+                case PlayerOrder.ByScore:
+                    list.Sort();
+                    break;
+                case PlayerOrder.ByName:
+                    list.Sort(compareByName);
+                    break;
+                case PlayerOrder.ByNameReverse:
+                    list.Sort(compareByNameReverse);
+                    break;
+            }
+        }
+
         private void InsertPlayer()
         {
-            // Variables
-            string name;
-            int score;
-            Player newPlayer;
+            // Ask view to give us information for creating a new player
+            (string name, int score) = view.AskForPlayer();
 
-            // Ask for player info
-            ConsoleView.AskPlayerName();
-            name = Console.ReadLine();
-            Console.Write("Score: ");
-            score = Convert.ToInt32(Console.ReadLine());
+            // Create new player
+            Player p = new Player(name, score);
 
-            // Create new player and add it to list
-            newPlayer = new Player(name, score);
-            playerList.Add(newPlayer);
-
-            playerList.Sort(comp);
+            // Insert new player in player list
+            list.Add(p);
         }
 
-        /// <summary>
-        /// Show all players in a list of players. This method can be static
-        /// because it doesn't depend on anything associated with an instance
-        /// of the program. Namely, the list of players is given as a parameter
-        /// to this method.
-        /// </summary>
-        /// <param name="playersToList">
-        /// An enumerable object of players to show.
-        /// </param>
-        private static void ListPlayers(IEnumerable<Player> playersToList)
+        private void ShowPlayersWithScore()
         {
-            Console.WriteLine("\nList of players");
-            Console.WriteLine("-------------\n");
+            // Ask view for minimum score
+            int minScore = view.AskForMinimumScore();
 
-            // Show each player in the enumerable object
-            foreach (Player p in playersToList)
-            {
-                Console.WriteLine($" -> {p.Name} with a score of {p.Score}");
-            }
-            Console.WriteLine();
-        }
-
-        /// <summary>
-        /// Show all players with a score higher than a user-specified value.
-        /// </summary>
-        private void ListPlayersWithScoreGreaterThan()
-        {
-            // Minimum score user should have in order to be shown
-            int minScore;
-            // Enumerable of players with score higher than the minimum score
-            IEnumerable<Player> playersWithScoreGreaterThan;
-
-            // Ask the user what is the minimum score
-            Console.Write("\nMinimum score player should have? ");
-            minScore = Convert.ToInt32(Console.ReadLine());
-
-            // Get players with score higher than the user-specified value
-            playersWithScoreGreaterThan =
+            // Create collection with players above minimum score
+            IEnumerable<Player> players =
                 GetPlayersWithScoreGreaterThan(minScore);
 
-            // List all players with score higher than the user-specified value
-            ListPlayers(playersWithScoreGreaterThan);
+            // Ask view to show players
+            view.ShowPlayers(players);
         }
 
-        /// <summary>
-        /// Get players with a score higher than a given value.
-        /// </summary>
-        /// <param name="minScore">Minimum score players should have.</param>
-        /// <returns>
-        /// An enumerable of players with a score higher than the given value.
-        /// </returns>
         private IEnumerable<Player> GetPlayersWithScoreGreaterThan(int minScore)
         {
-            // Cycle all players in the original player list
-            foreach (Player p in playerList)
+            foreach (Player p in list)
             {
-                // If the current player has a score higher than the
-                // given value....
                 if (p.Score > minScore)
-                {
-                    // ...return him as a member of the player enumerable
                     yield return p;
-                }
             }
         }
     }

@@ -1,45 +1,26 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace PlayerManagerMVC
 {
     public class CompareByName : IComparer<Player>
     {
+        private bool ord;
 
-        private bool ascend;
-
-        private bool score = false;
-
-        public CompareByName()
+        public int Compare(Player p1, Player p2)
         {
-            score = true;
-        }
-        public CompareByName(bool ascend)
-        {
-            this.ascend = ascend;
-        }
+            if (p1 == p2) return 0;
+            if (p1 is null) return -1;
+            if (p2 is null) return 1;
 
-        public int Compare(Player x, Player y)
-        {
-            if(score)
-            {
-                return (y.Score - x.Score);
-            }
-            
-            if (ascend)
-            {
-                return (string.Compare(x.Name, y.Name));
-            }
-            else if (!ascend)
-            {
-                return (string.Compare(x.Name, y.Name) * -1);
-            }
-
-            return (0);
-
+            if (ord)
+                return p1.Name.CompareTo(p2.Name);
+            else
+                return p2.Name.CompareTo(p1.Name);
         }
 
+        public CompareByName(bool ord)
+        {
+            this.ord = ord;
+        }
     }
 }
