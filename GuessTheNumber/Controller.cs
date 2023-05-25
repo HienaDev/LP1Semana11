@@ -8,19 +8,50 @@ namespace GuessTheNumber
     public class Controller
     {
 
-        private int attemps = 0;
-        private int guess;
+        private int targetNumber;
 
-        public void Run()
+        int guess;
+        int attempts = 0;
+        bool guessedCorrectly = false;
+
+        private ConsoleView view;
+        public Controller(int number)
         {
-            bool guessedCorrectly = false;
-
-            while(!guessedCorrectly)
-            {
-                ConsoleView
-            }
+            targetNumber = number;
         }
 
+
+        public void Start(ConsoleView view2)
+        {
+
+            view = view2;
+
+            view.StartMessage();
+
+            // Game loop
+            while (!guessedCorrectly)
+            {
+                guess = view.TakeAGuess();
+                attempts++;
+
+                if (guess == targetNumber)
+                {
+                    view.WinningMessage(attempts);
+                    guessedCorrectly = true;
+                }
+                else if (guess < targetNumber)
+                {
+                    view.LowMessage();
+                }
+                else
+                {
+                    view.HighMessage();
+                }
+            }
+
+            view.ThanksForPlaying();
+        
+        }
 
     }
 }
