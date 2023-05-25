@@ -9,7 +9,7 @@ namespace GuessTheNumber
     {
 
 
-        private Controller controller;
+        private readonly Controller controller;
 
         public ConsoleView(Controller controller)
         {
